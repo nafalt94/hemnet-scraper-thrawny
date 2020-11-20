@@ -48,3 +48,6 @@ class HemnetItem(DeclarativeBase):
 
     address = Column(String, default='')
     geographic_area = Column(String, default='')
+    x_coordinate = Column(Float, nullable=True)
+    y_coordinate = Column(Float, nullable=True)
+

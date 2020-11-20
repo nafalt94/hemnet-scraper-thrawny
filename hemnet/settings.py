@@ -108,9 +108,9 @@ USER_AGENT_CHOICES = [
 
 DATABASE = {
     'drivername': 'postgres',
-    'host': 'postgres',
+    'host': 'localhost',
     'port': '5432',
-    'username': 'scrape',
-    'password': 'scrape',
-    'database': 'scrape'
+    'username': 'postgres',
+    'password': 'password123',
+    'database': 'postgres'
 }

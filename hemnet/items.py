@@ -37,3 +37,6 @@ class HemnetItem(scrapy.Item):
 
     address = scrapy.Field()
     geographic_area = scrapy.Field()
+
+    x_coordinate = scrapy.Field()
+    y_coordinate = scrapy.Field()
