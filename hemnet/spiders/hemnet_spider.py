@@ -44,7 +44,7 @@ class HemnetSpider(scrapy.Spider):
             if not session.query(q.exists()).scalar():
                 yield scrapy.Request(url, self.parse_detail_page)
             # for att bara kora en i listan
-            break
+            #break
 
     def parse_detail_page(self, response):
         item = HemnetItem()
@@ -128,10 +128,8 @@ class HemnetSpider(scrapy.Spider):
         #item['sold_date'] = detail.css('.sold-property__metadata > time::attr("datetime")').extract_first()
         # item['address'] = detail.css('h1::text').extract_first()
 
-
-        #Nytt (endast date funkar atm):
+        #Nytt
         item['sold_date'] = response.css('.sold-property__metadata > time::attr("datetime")').extract_first()
-        item['address'] = response.css('.sold-property__address > ::text').extract()
 
         #Testar med data från kartan:
         map_string = response.css('.property-map').extract()
@@ -143,9 +141,26 @@ class HemnetSpider(scrapy.Spider):
         #item['geographic_area'] = detail.css('.area::text').extract_first().strip().lstrip(u',').strip().rstrip(u',')
 
         #testar ett alternatvi:
-        item['geographic_area'] = response.css('.property-icon property__description-icon > span::text').extract_first()
+        res_raw = response.css('.sold-property__metadata').getall()
+        print(str(res_raw))
+        res_raw = res_raw[0].split()
 
-        # print("här är stringen: " + str(map_string))
+        i=0
+        #Geographical area string
+        res_string = ""
+        flag = False
+        while i < len(res_raw):
+            if(res_raw[i] == "-"):
+                if flag == True:
+                    break
+                flag = True
+            if flag == True and res_raw[i] != "-":
+                res_string += res_raw[i] + " "
+
+                print("Hej "+ res_raw[i] + str(i) + " " + res_string)
+            i+=1
+
+        item['geographic_area'] = res_string
 
         coordinates = map_to_output(str(map_string),"coordinates")
         item['x_coordinate'] = float(coordinates[0])
@@ -166,70 +181,40 @@ def get_selling_statistics(response, item):
 
     #print(response.css('.sold-property__price-stats > ::text').getall())
     res_raw = response.css('.sold-property__price-stats > ::text').getall()
-    print("före")
 
     #Remove blank elements
     res = [s for s in res_raw if len(s.rstrip())>0]
     print(str(res))
 
 
-    #HÄr är jkag på spåret....
-    i=0
-    while i < len(res):
-        if res[i] == u'Begärt pris':
-            print("hej1")
-            string = re.sub("[^0-9]", "", res[i+1])
-            print("detta rpintas: " + str(string))
-            item['asked_price'] = int(string)
-        if res[i] == u'Prisutveckling':
-            print("hej2")
-            substring = re.search('\+(.*?)kr', res[i+1]).group(1)
-            string = re.sub("[^0-9]", "", substring)
-            print("detta rpintas: " + str(string))
-            #item['price_trend_flat'], item['price_trend_percentage'] = price_trend(value)
-        if res[i] == u'Pris per kvadratmeter':
-            print("hej3")
-            string = re.sub("[^0-9]", "", res[i + 1])
-            print("detta rpintas: " + str(string))
-            item['price_per_square_meter'] = int(string)
-        i+=1
+    #Lös så att den skippar om den inte hittar värden på dessa
+    try:
+        i=0
+        while i < len(res):
+            if res[i] == u'Begärt pris':
+                string = re.sub("[^0-9]", "", res[i+1])
+                item['asked_price'] = int(string)
+            if res[i] == u'Prisutveckling':
 
-    # for index,i in enumerate(test):
-    #     if len(i.rstrip())>0:
-    #         print(i)
-    #
-    #         if i == u'Begärt pris':
-    #             #item['asked_price'] = price_to_int(value)
-    #             print("hej1")
-    #         if i == u'Prisutveckling':
-    #             print("hej2")
-    #             #result = re.search('address&quot;:&quot;(.*?)&', (i+1).group(1)
-    #             print(test(index+1))
-    #             #item['price_trend_flat'], item['price_trend_percentage'] = price_trend(value)
-    #         if i == u'Pris per kvadratmeter':
-    #             print("hej3")
-    #             #item['price_per_square_meter'] = int(value.replace(u'\xa0', '').split(' ')[0])
+                #Måste här hantera att det kan vara negativa priser.
+                if "-" in res[i+1]:
+                    string2 = "-"+re.search('\(\-(.*?)%', res[i + 1]).group(1)
+                    substring1 = re.search('\-(.*?)kr', res[i + 1]).group(1)
+                    string1 = "-"+re.sub("[^0-9]", "", substring1)
+                else:
+                    string2 = re.search('\(\+(.*?)%', res[i + 1]).group(1)
+                    substring1 = re.search('\+(.*?)kr', res[i + 1]).group(1)
+                    string1 = re.sub("[^0-9]", "", substring1)
 
-
-    # for li in response.css('.sold-property__price-stats > dd ::text').getall():
-    #     key = li.css('::text').extract_first().strip()
-    #     value = li.css('strong::text').extract_first()
-    #
-    #     print("key och value")
-    #     print(key)
-    #     print(value)
-    #     if value:
-    #         if key == u'Begärt pris':
-    #             item['asked_price'] = price_to_int(value)
-    #         if key == u'Prisutveckling':
-    #             item['price_trend_flat'], item['price_trend_percentage'] = price_trend(value)
-    #         if key == u'Pris per kvadratmeter':
-    #             item['price_per_square_meter'] = int(value.replace(u'\xa0', '').split(' ')[0])
-
-
-
-
-
+                #print("detta rpintas: " + str(string1))
+                item['price_trend_flat'] = int(string1)
+                item['price_trend_percentage'] = int(string2)
+            if res[i] == u'Pris per kvadratmeter':
+                string = re.sub("[^0-9]", "", res[i + 1])
+                item['price_per_square_meter'] = int(string)
+            i+=1
+    except IndexError:
+        pass
 
     # #OBS FUNKAR EJ FÖR PRISUTVECKLING - Får lösa på annat sätt.
     # # New solution (not the best but seems to do the work)
