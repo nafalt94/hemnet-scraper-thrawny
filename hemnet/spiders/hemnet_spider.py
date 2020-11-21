@@ -15,6 +15,15 @@ from hemnet.models import HemnetItem as HemnetSQL, db_connect, create_hemnet_tab
 
 BASE_URL = 'http://www.hemnet.se/salda/bostader?'
 
+#Slottstaden
+BASE_URL = 'https://www.hemnet.se/salda/bostader?location_ids%5B%5D=898493&sold_age=all'
+
+#Slottstaden tvåor:
+BASE_URL = 'https://www.hemnet.se/salda/bostader?location_ids%5B%5D=898493&page=37&rooms_max=2&rooms_min=2&sold_age=all'
+
+#Tvåor Västra Hamanen, Gamla staden
+BASE_URL = 'https://www.hemnet.se/salda/bostader?location_ids%5B%5D=473990&location_ids%5B%5D=474014&page=1&rooms_max=2&rooms_min=2&sold_age=all'
+
 
 def start_urls(start, stop):
     return ['{}&page={}'.format(BASE_URL, x) for x in range(start, stop)]
@@ -142,7 +151,7 @@ class HemnetSpider(scrapy.Spider):
 
         #testar ett alternatvi:
         res_raw = response.css('.sold-property__metadata').getall()
-        print(str(res_raw))
+        #print(str(res_raw))
         res_raw = res_raw[0].split()
 
         i=0
@@ -157,7 +166,6 @@ class HemnetSpider(scrapy.Spider):
             if flag == True and res_raw[i] != "-":
                 res_string += res_raw[i] + " "
 
-                print("Hej "+ res_raw[i] + str(i) + " " + res_string)
             i+=1
 
         item['geographic_area'] = res_string
@@ -184,7 +192,7 @@ def get_selling_statistics(response, item):
 
     #Remove blank elements
     res = [s for s in res_raw if len(s.rstrip())>0]
-    print(str(res))
+    #print(str(res))
 
 
     #Lös så att den skippar om den inte hittar värden på dessa
